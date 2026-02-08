@@ -1,23 +1,60 @@
 import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
-import { X, Plus } from 'lucide-react';
-import { Habit, HabitCategory, CATEGORY_CONFIG } from '@/types/habit';
+import { X, Plus, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 
 interface AddHabitModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAdd: (habit: Omit<Habit, 'id' | 'createdAt' | 'completions' | 'notes'>) => void;
-  editHabit?: Habit;
+  onAdd: (habit: {
+    name: string;
+    description: string | null;
+    icon: string;
+    color: string;
+    category: string;
+    frequency: string;
+    priority: string;
+  }) => Promise<any>;
+  editHabit?: {
+    id: string;
+    name: string;
+    description: string | null;
+    icon: string;
+    color: string;
+    category: string;
+    frequency: string;
+    priority: string;
+  };
 }
 
 const HABIT_ICONS = ['⭐', '💪', '📚', '🧘', '🏃', '💊', '🥗', '💧', '😴', '🎯', '✍️', '🎨'];
+
+const CATEGORIES = [
+  { key: 'health', label: 'Health', icon: '💚', color: 'hsl(160 84% 39%)' },
+  { key: 'fitness', label: 'Fitness', icon: '💪', color: 'hsl(25 95% 53%)' },
+  { key: 'mindfulness', label: 'Mind', icon: '🧘', color: 'hsl(280 67% 52%)' },
+  { key: 'productivity', label: 'Work', icon: '⚡', color: 'hsl(199 89% 48%)' },
+  { key: 'learning', label: 'Learn', icon: '📚', color: 'hsl(38 92% 50%)' },
+  { key: 'social', label: 'Social', icon: '👥', color: 'hsl(340 82% 52%)' },
+  { key: 'creativity', label: 'Create', icon: '🎨', color: 'hsl(300 67% 52%)' },
+  { key: 'finance', label: 'Finance', icon: '💰', color: 'hsl(140 70% 35%)' },
+];
+
+const PRIORITIES = [
+  { key: 'low', label: 'Low', color: 'text-muted-foreground' },
+  { key: 'medium', label: 'Medium', color: 'text-accent' },
+  { key: 'high', label: 'High', color: 'text-destructive' },
+];
 
 export const AddHabitModal: React.FC<AddHabitModalProps> = ({
   isOpen,
@@ -27,77 +64,99 @@ export const AddHabitModal: React.FC<AddHabitModalProps> = ({
 }) => {
   const [name, setName] = useState(editHabit?.name || '');
   const [description, setDescription] = useState(editHabit?.description || '');
-  const [category, setCategory] = useState<HabitCategory>(editHabit?.category || 'productivity');
+  const [category, setCategory] = useState(editHabit?.category || 'productivity');
   const [icon, setIcon] = useState(editHabit?.icon || '⭐');
-  const [frequency, setFrequency] = useState<'daily' | 'weekly'>(editHabit?.frequency || 'daily');
+  const [frequency, setFrequency] = useState(editHabit?.frequency || 'daily');
+  const [priority, setPriority] = useState(editHabit?.priority || 'medium');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const selectedCategory = CATEGORIES.find(c => c.key === category) || CATEGORIES[3];
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
 
-    onAdd({
-      name: name.trim(),
-      description: description.trim() || undefined,
-      category,
-      icon,
-      color: CATEGORY_CONFIG[category].color,
-      frequency,
-    });
+    setLoading(true);
+    try {
+      await onAdd({
+        name: name.trim(),
+        description: description.trim() || null,
+        category,
+        icon,
+        color: selectedCategory.color,
+        frequency,
+        priority,
+      });
 
-    // Reset form
+      // Reset form
+      setName('');
+      setDescription('');
+      setCategory('productivity');
+      setIcon('⭐');
+      setFrequency('daily');
+      setPriority('medium');
+      onClose();
+    } catch (error) {
+      console.error('Error adding habit:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleClose = () => {
     setName('');
     setDescription('');
     setCategory('productivity');
     setIcon('⭐');
     setFrequency('daily');
+    setPriority('medium');
     onClose();
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+    <Dialog open={isOpen} onOpenChange={handleClose}>
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold">
             {editHabit ? 'Edit Habit' : 'Create New Habit'}
           </DialogTitle>
+          <DialogDescription>
+            {editHabit ? 'Update your habit details below.' : 'Add a new habit to track your progress.'}
+          </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-5 mt-4">
+        <form onSubmit={handleSubmit} className="space-y-5 mt-2">
           {/* Name */}
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-2">
-              Habit Name
-            </label>
-            <input
+          <div className="space-y-2">
+            <Label htmlFor="habitName">Habit Name *</Label>
+            <Input
+              id="habitName"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g., Read for 30 minutes"
-              className="w-full px-4 py-3 rounded-xl border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-all"
               required
               autoFocus
+              className="h-12"
             />
           </div>
 
           {/* Description */}
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-2">
-              Description (optional)
-            </label>
-            <textarea
+          <div className="space-y-2">
+            <Label htmlFor="description">Description (optional)</Label>
+            <Textarea
+              id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Add more details about this habit..."
-              className="w-full px-4 py-3 rounded-xl border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-all resize-none"
+              placeholder="Add more details..."
               rows={2}
+              className="resize-none"
             />
           </div>
 
           {/* Icon selector */}
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-2">
-              Icon
-            </label>
+          <div className="space-y-2">
+            <Label>Icon</Label>
             <div className="flex flex-wrap gap-2">
               {HABIT_ICONS.map((i) => (
                 <button
@@ -118,38 +177,56 @@ export const AddHabitModal: React.FC<AddHabitModalProps> = ({
           </div>
 
           {/* Category */}
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-2">
-              Category
-            </label>
+          <div className="space-y-2">
+            <Label>Category</Label>
             <div className="grid grid-cols-4 gap-2">
-              {(Object.entries(CATEGORY_CONFIG) as [HabitCategory, typeof CATEGORY_CONFIG[HabitCategory]][]).map(([key, config]) => (
+              {CATEGORIES.map((cat) => (
                 <button
-                  key={key}
+                  key={cat.key}
                   type="button"
-                  onClick={() => setCategory(key)}
+                  onClick={() => setCategory(cat.key)}
                   className={cn(
-                    "flex flex-col items-center gap-1 p-3 rounded-xl transition-all text-center",
-                    category === key
+                    "flex flex-col items-center gap-1 p-2.5 rounded-xl transition-all text-center",
+                    category === cat.key
                       ? "ring-2 ring-primary"
                       : "hover:bg-secondary"
                   )}
                   style={{
-                    backgroundColor: category === key ? `${config.color}15` : undefined,
+                    backgroundColor: category === cat.key ? `${cat.color}15` : undefined,
                   }}
                 >
-                  <span className="text-lg">{config.icon}</span>
-                  <span className="text-xs font-medium">{config.label}</span>
+                  <span className="text-lg">{cat.icon}</span>
+                  <span className="text-xs font-medium">{cat.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Priority */}
+          <div className="space-y-2">
+            <Label>Priority</Label>
+            <div className="flex gap-2">
+              {PRIORITIES.map((p) => (
+                <button
+                  key={p.key}
+                  type="button"
+                  onClick={() => setPriority(p.key)}
+                  className={cn(
+                    "flex-1 py-2.5 rounded-xl font-medium transition-all text-sm",
+                    priority === p.key
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                  )}
+                >
+                  {p.label}
                 </button>
               ))}
             </div>
           </div>
 
           {/* Frequency */}
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-2">
-              Frequency
-            </label>
+          <div className="space-y-2">
+            <Label>Frequency</Label>
             <div className="flex gap-2">
               <button
                 type="button"
@@ -183,8 +260,9 @@ export const AddHabitModal: React.FC<AddHabitModalProps> = ({
             <Button
               type="button"
               variant="outline"
-              onClick={onClose}
+              onClick={handleClose}
               className="flex-1"
+              disabled={loading}
             >
               Cancel
             </Button>
@@ -192,9 +270,16 @@ export const AddHabitModal: React.FC<AddHabitModalProps> = ({
               type="submit"
               variant="gradient"
               className="flex-1"
+              disabled={loading || !name.trim()}
             >
-              <Plus className="w-4 h-4 mr-2" />
-              {editHabit ? 'Save Changes' : 'Add Habit'}
+              {loading ? (
+                <span className="animate-spin">⏳</span>
+              ) : (
+                <>
+                  {editHabit ? <Save className="w-4 h-4 mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
+                  {editHabit ? 'Save Changes' : 'Add Habit'}
+                </>
+              )}
             </Button>
           </div>
         </form>

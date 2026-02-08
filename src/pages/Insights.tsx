@@ -1,15 +1,46 @@
 import React from 'react';
-import { Sparkles, Lightbulb, TrendingUp, AlertCircle, PartyPopper, Brain } from 'lucide-react';
-import { useHabits } from '@/hooks/useHabits';
+import { Sparkles, Lightbulb, TrendingUp, AlertCircle, PartyPopper, Brain, Loader2 } from 'lucide-react';
+import { useHabitsDB } from '@/hooks/useHabitsDB';
 import { useAIInsights } from '@/hooks/useAIInsights';
 import { AIInsightCard } from '@/components/dashboard/AIInsightCard';
 import { cn } from '@/lib/utils';
 import { format, subDays } from 'date-fns';
-import { CATEGORY_CONFIG } from '@/types/habit';
+
+const CATEGORY_CONFIG: Record<string, { label: string; icon: string; color: string }> = {
+  health: { label: 'Health', icon: '💚', color: 'hsl(160 84% 39%)' },
+  fitness: { label: 'Fitness', icon: '💪', color: 'hsl(25 95% 53%)' },
+  mindfulness: { label: 'Mind', icon: '🧘', color: 'hsl(280 67% 52%)' },
+  productivity: { label: 'Work', icon: '⚡', color: 'hsl(199 89% 48%)' },
+  learning: { label: 'Learn', icon: '📚', color: 'hsl(38 92% 50%)' },
+  social: { label: 'Social', icon: '👥', color: 'hsl(340 82% 52%)' },
+  creativity: { label: 'Create', icon: '🎨', color: 'hsl(300 67% 52%)' },
+  finance: { label: 'Finance', icon: '💰', color: 'hsl(140 70% 35%)' },
+};
 
 const Insights: React.FC = () => {
-  const { habits, stats } = useHabits();
-  const { insights, getWeeklySummary } = useAIInsights(habits, stats);
+  const { habits, profile, loading, completions, getOverallStreak } = useHabitsDB();
+  
+  // Convert habits to the format expected by useAIInsights
+  const habitsForInsights = habits.map(h => ({
+    ...h,
+    category: h.category as any,
+    frequency: h.frequency as 'daily' | 'weekly',
+    createdAt: h.created_at,
+    completions: {},
+    notes: {},
+  }));
+  
+  const statsForInsights = {
+    totalXP: profile?.total_xp || 0,
+    level: profile?.level || 1,
+    currentStreak: getOverallStreak(),
+    longestStreak: profile?.longest_streak || 0,
+    habitsCompleted: completions.length,
+    perfectDays: 0,
+    achievements: [],
+  };
+  
+  const { insights, getWeeklySummary } = useAIInsights(habitsForInsights, statsForInsights);
   const weeklySummary = getWeeklySummary;
 
   // Generate category insights
@@ -19,15 +50,16 @@ const Insights: React.FC = () => {
       format(subDays(new Date(), i), 'yyyy-MM-dd')
     );
     
-    let completions = 0;
+    let categoryCompletions = 0;
     categoryHabits.forEach(habit => {
-      last7Days.forEach(day => {
-        if (habit.completions[day]) completions++;
-      });
+      const habitCompletions = completions.filter(
+        c => c.habit_id === habit.id && last7Days.includes(c.completed_date)
+      );
+      categoryCompletions += habitCompletions.length;
     });
     
     const possible = categoryHabits.length * 7;
-    const rate = possible > 0 ? (completions / possible) * 100 : 0;
+    const rate = possible > 0 ? (categoryCompletions / possible) * 100 : 0;
     
     return {
       category: key,
@@ -42,12 +74,22 @@ const Insights: React.FC = () => {
     const last30Days = Array.from({ length: 30 }, (_, i) => 
       format(subDays(new Date(), i), 'yyyy-MM-dd')
     );
-    const completions = last30Days.filter(day => habit.completions[day]).length;
-    return { habit, rate: (completions / 30) * 100 };
+    const habitCompletions = completions.filter(
+      c => c.habit_id === habit.id && last30Days.includes(c.completed_date)
+    ).length;
+    return { habit, rate: (habitCompletions / 30) * 100 };
   }).sort((a, b) => b.rate - a.rate);
 
   const bestHabit = habitPerformance[0];
   const needsAttention = habitPerformance.filter(h => h.rate < 30).slice(0, 3);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen p-4 md:p-6 lg:p-8">
@@ -84,9 +126,15 @@ const Insights: React.FC = () => {
           Today's Insights
         </h2>
         <div className="space-y-3">
-          {insights.map((insight) => (
-            <AIInsightCard key={insight.id} insight={insight} />
-          ))}
+          {insights.length > 0 ? (
+            insights.map((insight) => (
+              <AIInsightCard key={insight.id} insight={insight} />
+            ))
+          ) : (
+            <div className="p-4 rounded-xl bg-secondary/50 text-center">
+              <p className="text-muted-foreground">Add some habits to get personalized insights!</p>
+            </div>
+          )}
         </div>
       </section>
 

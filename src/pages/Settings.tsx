@@ -7,22 +7,27 @@ import {
   Download, 
   Trash2, 
   User,
-  Palette
+  Palette,
+  LogOut
 } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
-import { useHabits } from '@/hooks/useHabits';
+import { useHabitsDB } from '@/hooks/useHabitsDB';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { useToast } from '@/hooks/use-toast';
 
 const Settings: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
-  const { habits, stats } = useHabits();
+  const { habits, profile } = useHabitsDB();
+  const { user, signOut } = useAuth();
+  const { toast } = useToast();
 
   const handleExportData = () => {
     const data = {
       habits,
-      stats,
+      profile,
       exportedAt: new Date().toISOString(),
     };
     
@@ -35,13 +40,15 @@ const Settings: React.FC = () => {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+    
+    toast({
+      title: "Data exported! 📦",
+      description: "Your habits and progress have been downloaded.",
+    });
   };
 
-  const handleClearData = () => {
-    if (window.confirm('Are you sure you want to clear all data? This action cannot be undone.')) {
-      localStorage.removeItem('habitflow_data');
-      window.location.reload();
-    }
+  const handleSignOut = async () => {
+    await signOut();
   };
 
   return (
@@ -68,18 +75,19 @@ const Settings: React.FC = () => {
             <div className="w-16 h-16 rounded-2xl gradient-primary flex items-center justify-center">
               <User className="w-8 h-8 text-primary-foreground" />
             </div>
-            <div>
-              <h3 className="font-semibold text-foreground">Guest User</h3>
+            <div className="flex-1">
+              <h3 className="font-semibold text-foreground">{user?.email || 'Guest User'}</h3>
               <p className="text-sm text-muted-foreground">Free Plan</p>
               <p className="text-xs text-muted-foreground mt-1">
-                Level {stats.level} • {stats.totalXP} XP
+                Level {profile?.level || 1} • {profile?.total_xp || 0} XP
               </p>
             </div>
           </div>
-          <div className="mt-4 p-3 rounded-xl bg-primary/5 border border-primary/10">
-            <p className="text-sm text-foreground">
-              🔒 Sign in to sync your data across devices and unlock cloud features.
-            </p>
+          <div className="mt-4">
+            <Button variant="outline" onClick={handleSignOut} className="w-full">
+              <LogOut className="w-4 h-4 mr-2" />
+              Sign Out
+            </Button>
           </div>
         </section>
 
@@ -139,6 +147,10 @@ const Settings: React.FC = () => {
                           body: 'Notifications enabled! You\'ll receive habit reminders.',
                           icon: '/favicon.ico'
                         });
+                        toast({
+                          title: "Notifications enabled! 🔔",
+                          description: "You'll receive habit reminders.",
+                        });
                       }
                     });
                   }
@@ -165,16 +177,6 @@ const Settings: React.FC = () => {
               <Button variant="outline" onClick={handleExportData}>
                 <Download className="w-4 h-4 mr-2" />
                 Export
-              </Button>
-            </div>
-            <div className="flex items-center justify-between pt-4 border-t border-border">
-              <div>
-                <h3 className="font-medium text-destructive">Clear All Data</h3>
-                <p className="text-sm text-muted-foreground">Permanently delete all habits and progress</p>
-              </div>
-              <Button variant="destructive" onClick={handleClearData}>
-                <Trash2 className="w-4 h-4 mr-2" />
-                Clear
               </Button>
             </div>
           </div>
