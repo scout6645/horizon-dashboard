@@ -1,24 +1,34 @@
 import React from 'react';
-import { BarChart3, TrendingUp, Calendar, Target, Flame, Award } from 'lucide-react';
-import { useHabits } from '@/hooks/useHabits';
-import { useAIInsights } from '@/hooks/useAIInsights';
+import { BarChart3, TrendingUp, Calendar, Target, Flame, Award, Loader2 } from 'lucide-react';
+import { useHabitsDB } from '@/hooks/useHabitsDB';
 import { WeeklyChart } from '@/components/dashboard/WeeklyChart';
 import { HeatmapCalendar } from '@/components/dashboard/HeatmapCalendar';
 import { StatsCard } from '@/components/dashboard/StatsCard';
 import { format, subDays } from 'date-fns';
 
 const Analytics: React.FC = () => {
-  const { habits, stats, getWeeklyStats, getCompletionHeatmap, getTodayProgress } = useHabits();
-  const { getWeeklySummary } = useAIInsights(habits, stats);
+  const { habits, profile, loading, getWeeklyStats, getCompletionHeatmap, getTodayProgress, completions, getOverallStreak } = useHabitsDB();
   
   const weeklyStats = getWeeklyStats();
   const heatmapData = getCompletionHeatmap();
-  const todayProgress = getTodayProgress();
-  const weeklySummary = getWeeklySummary;
 
   // Calculate additional stats
   const totalCompletionsAllTime = Object.values(heatmapData).reduce((sum, count) => sum + count, 0);
-  const averageDaily = habits.length > 0 ? (totalCompletionsAllTime / 90).toFixed(1) : '0';
+  const averageDaily = habits.length > 0 ? (totalCompletionsAllTime / Math.max(90, 1)).toFixed(1) : '0';
+  
+  // Weekly summary calculation
+  const last7Days = Array.from({ length: 7 }, (_, i) => format(subDays(new Date(), i), 'yyyy-MM-dd'));
+  const weeklyCompletions = completions.filter(c => last7Days.includes(c.completed_date)).length;
+  const possibleWeekly = habits.length * 7;
+  const weeklyCompletionRate = possibleWeekly > 0 ? Math.round((weeklyCompletions / possibleWeekly) * 100) : 0;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen p-4 md:p-6 lg:p-8">
@@ -43,12 +53,18 @@ const Analytics: React.FC = () => {
             </p>
           </div>
           <div className="text-right">
-            <span className="text-3xl font-bold text-primary">{weeklySummary.completionRate}%</span>
+            <span className="text-3xl font-bold text-primary">{weeklyCompletionRate}%</span>
             <p className="text-sm text-muted-foreground">completion rate</p>
           </div>
         </div>
         <div className="mt-4 p-3 rounded-xl bg-primary/5 border border-primary/10">
-          <p className="text-sm text-foreground">{weeklySummary.summary}</p>
+          <p className="text-sm text-foreground">
+            {weeklyCompletionRate >= 70 
+              ? "🎉 Excellent week! You're building strong habits."
+              : weeklyCompletionRate >= 40
+              ? "📈 Good progress! Keep pushing for consistency."
+              : "💪 Room for improvement. Try starting smaller!"}
+          </p>
         </div>
       </div>
 
@@ -56,7 +72,7 @@ const Analytics: React.FC = () => {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatsCard
           title="Longest Streak"
-          value={`${stats.longestStreak}d`}
+          value={`${profile?.longest_streak || 0}d`}
           subtitle="Personal best"
           icon={Flame}
           variant="accent"
@@ -110,8 +126,10 @@ const Analytics: React.FC = () => {
               const last30Days = Array.from({ length: 30 }, (_, i) => 
                 format(subDays(new Date(), i), 'yyyy-MM-dd')
               );
-              const completions = last30Days.filter(day => habit.completions[day]).length;
-              const rate = (completions / 30) * 100;
+              const habitCompletions = completions.filter(
+                c => c.habit_id === habit.id && last30Days.includes(c.completed_date)
+              ).length;
+              const rate = (habitCompletions / 30) * 100;
 
               return (
                 <div key={habit.id} className="flex items-center gap-4">

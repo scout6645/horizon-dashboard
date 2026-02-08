@@ -1,7 +1,7 @@
 import React from 'react';
 import { format } from 'date-fns';
-import { Plus, Flame, Target, Trophy, Zap } from 'lucide-react';
-import { useHabits } from '@/hooks/useHabits';
+import { Plus, Flame, Target, Trophy, Zap, Loader2 } from 'lucide-react';
+import { useHabitsDB } from '@/hooks/useHabitsDB';
 import { useAIInsights } from '@/hooks/useAIInsights';
 import { StatsCard } from '@/components/dashboard/StatsCard';
 import { XPProgress } from '@/components/dashboard/XPProgress';
@@ -17,7 +17,8 @@ const Dashboard: React.FC = () => {
   const [showAddModal, setShowAddModal] = React.useState(false);
   const {
     habits,
-    stats,
+    profile,
+    loading,
     addHabit,
     toggleHabitCompletion,
     deleteHabit,
@@ -26,13 +27,46 @@ const Dashboard: React.FC = () => {
     getTodayProgress,
     getWeeklyStats,
     getCompletionHeatmap,
-  } = useHabits();
-  const { insights } = useAIInsights(habits, stats);
+    getOverallStreak,
+    isCompleted,
+    getNote,
+  } = useHabitsDB();
+  
+  // Convert habits to the format expected by useAIInsights
+  const habitsForInsights = habits.map(h => ({
+    ...h,
+    category: h.category as any,
+    frequency: h.frequency as 'daily' | 'weekly',
+    createdAt: h.created_at,
+    completions: {},
+    notes: {},
+  }));
+  
+  const statsForInsights = {
+    totalXP: profile?.total_xp || 0,
+    level: profile?.level || 1,
+    currentStreak: getOverallStreak(),
+    longestStreak: profile?.longest_streak || 0,
+    habitsCompleted: 0,
+    perfectDays: 0,
+    achievements: [],
+  };
+  
+  const { insights } = useAIInsights(habitsForInsights, statsForInsights);
 
   const todayProgress = getTodayProgress();
   const weeklyStats = getWeeklyStats();
   const heatmapData = getCompletionHeatmap();
   const todayKey = format(new Date(), 'yyyy-MM-dd');
+  const currentStreak = getOverallStreak();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen p-4 md:p-6 lg:p-8">
@@ -70,7 +104,7 @@ const Dashboard: React.FC = () => {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatsCard
           title="Current Streak"
-          value={`${stats.currentStreak}d`}
+          value={`${currentStreak}d`}
           subtitle="Keep it going!"
           icon={Flame}
           variant="accent"
@@ -84,15 +118,15 @@ const Dashboard: React.FC = () => {
         />
         <StatsCard
           title="Total XP"
-          value={stats.totalXP.toLocaleString()}
-          subtitle={`Level ${stats.level}`}
+          value={(profile?.total_xp || 0).toLocaleString()}
+          subtitle={`Level ${profile?.level || 1}`}
           icon={Zap}
           variant="level"
         />
         <StatsCard
           title="Achievements"
-          value={stats.achievements.filter(a => a.unlockedAt).length}
-          subtitle={`of ${stats.achievements.length} unlocked`}
+          value="0"
+          subtitle="Keep going!"
           icon={Trophy}
           variant="primary"
         />
@@ -130,9 +164,18 @@ const Dashboard: React.FC = () => {
               {habits.map((habit) => (
                 <HabitCard
                   key={habit.id}
-                  habit={habit}
-                  streak={getHabitStreak(habit)}
-                  isCompleted={habit.completions[todayKey] || false}
+                  habit={{
+                    id: habit.id,
+                    name: habit.name,
+                    description: habit.description,
+                    icon: habit.icon,
+                    color: habit.color,
+                    category: habit.category,
+                    priority: habit.priority,
+                  }}
+                  streak={getHabitStreak(habit.id)}
+                  isCompleted={isCompleted(habit.id, todayKey)}
+                  note={getNote(habit.id, todayKey)}
                   onToggle={() => toggleHabitCompletion(habit.id)}
                   onEdit={() => {}}
                   onDelete={() => deleteHabit(habit.id)}
@@ -149,7 +192,7 @@ const Dashboard: React.FC = () => {
             completed={todayProgress.completed} 
             total={todayProgress.total} 
           />
-          <XPProgress xp={stats.totalXP} level={stats.level} />
+          <XPProgress xp={profile?.total_xp || 0} level={profile?.level || 1} />
         </div>
       </div>
 
@@ -158,6 +201,16 @@ const Dashboard: React.FC = () => {
         <WeeklyChart data={weeklyStats} />
         <HeatmapCalendar data={heatmapData} maxHabits={habits.length} />
       </div>
+
+      {/* Floating Add Button (Mobile) */}
+      <Button
+        variant="gradient"
+        size="lg"
+        className="fixed bottom-24 right-4 md:hidden rounded-full w-14 h-14 p-0 shadow-lg"
+        onClick={() => setShowAddModal(true)}
+      >
+        <Plus className="w-6 h-6" />
+      </Button>
 
       {/* Add Habit Modal */}
       <AddHabitModal

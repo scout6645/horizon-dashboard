@@ -21,8 +21,8 @@ export const MobileNav: React.FC = () => {
   const location = useLocation();
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-xl border-t border-border safe-area-bottom">
-      <div className="flex items-center justify-around h-16 px-2">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-xl border-t border-border">
+      <div className="flex items-center justify-around h-16 px-2 pb-safe">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
           return (
@@ -30,7 +30,7 @@ export const MobileNav: React.FC = () => {
               key={item.path}
               to={item.path}
               className={cn(
-                "flex flex-col items-center justify-center gap-1 px-3 py-1.5 rounded-xl transition-all duration-200 min-w-[64px]",
+                "flex flex-col items-center justify-center gap-1 px-3 py-1.5 rounded-xl transition-all duration-200 min-w-[56px]",
                 isActive
                   ? "text-primary"
                   : "text-muted-foreground"

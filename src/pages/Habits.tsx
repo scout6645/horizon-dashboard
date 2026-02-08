@@ -3,32 +3,45 @@ import { format, subDays, addDays } from 'date-fns';
 import { 
   Plus, 
   Search, 
-  Filter, 
   ChevronLeft, 
   ChevronRight,
-  ListChecks
+  ListChecks,
+  Loader2
 } from 'lucide-react';
-import { useHabits } from '@/hooks/useHabits';
+import { useHabitsDB } from '@/hooks/useHabitsDB';
 import { HabitCard } from '@/components/habits/HabitCard';
 import { AddHabitModal } from '@/components/habits/AddHabitModal';
 import { Button } from '@/components/ui/button';
-import { CATEGORY_CONFIG, HabitCategory } from '@/types/habit';
 import { cn } from '@/lib/utils';
+
+const CATEGORY_CONFIG: Record<string, { label: string; icon: string; color: string }> = {
+  health: { label: 'Health', icon: '💚', color: 'hsl(160 84% 39%)' },
+  fitness: { label: 'Fitness', icon: '💪', color: 'hsl(25 95% 53%)' },
+  mindfulness: { label: 'Mind', icon: '🧘', color: 'hsl(280 67% 52%)' },
+  productivity: { label: 'Work', icon: '⚡', color: 'hsl(199 89% 48%)' },
+  learning: { label: 'Learn', icon: '📚', color: 'hsl(38 92% 50%)' },
+  social: { label: 'Social', icon: '👥', color: 'hsl(340 82% 52%)' },
+  creativity: { label: 'Create', icon: '🎨', color: 'hsl(300 67% 52%)' },
+  finance: { label: 'Finance', icon: '💰', color: 'hsl(140 70% 35%)' },
+};
 
 const Habits: React.FC = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<HabitCategory | 'all'>('all');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedDate, setSelectedDate] = useState(new Date());
   
   const {
     habits,
+    loading,
     addHabit,
     toggleHabitCompletion,
     deleteHabit,
     addNote,
     getHabitStreak,
-  } = useHabits();
+    isCompleted,
+    getNote,
+  } = useHabitsDB();
 
   const dateKey = format(selectedDate, 'yyyy-MM-dd');
   const isToday = format(new Date(), 'yyyy-MM-dd') === dateKey;
@@ -42,7 +55,15 @@ const Habits: React.FC = () => {
     });
   }, [habits, searchQuery, selectedCategory]);
 
-  const completedCount = filteredHabits.filter(h => h.completions[dateKey]).length;
+  const completedCount = filteredHabits.filter(h => isCompleted(h.id, dateKey)).length;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen p-4 md:p-6 lg:p-8">
@@ -73,8 +94,9 @@ const Habits: React.FC = () => {
         <div className="flex items-center justify-center gap-2 p-2 rounded-xl bg-card border border-border">
           <Button
             variant="ghost"
-            size="icon-sm"
+            size="icon"
             onClick={() => setSelectedDate(subDays(selectedDate, 1))}
+            className="h-8 w-8"
           >
             <ChevronLeft className="w-4 h-4" />
           </Button>
@@ -91,9 +113,10 @@ const Habits: React.FC = () => {
           </button>
           <Button
             variant="ghost"
-            size="icon-sm"
+            size="icon"
             onClick={() => setSelectedDate(addDays(selectedDate, 1))}
             disabled={format(addDays(selectedDate, 1), 'yyyy-MM-dd') > format(new Date(), 'yyyy-MM-dd')}
+            className="h-8 w-8"
           >
             <ChevronRight className="w-4 h-4" />
           </Button>
@@ -124,7 +147,7 @@ const Habits: React.FC = () => {
             >
               All
             </button>
-            {(Object.entries(CATEGORY_CONFIG) as [HabitCategory, typeof CATEGORY_CONFIG[HabitCategory]][]).map(([key, config]) => (
+            {Object.entries(CATEGORY_CONFIG).map(([key, config]) => (
               <button
                 key={key}
                 onClick={() => setSelectedCategory(key)}
@@ -184,9 +207,18 @@ const Habits: React.FC = () => {
           {filteredHabits.map((habit) => (
             <HabitCard
               key={habit.id}
-              habit={habit}
-              streak={getHabitStreak(habit)}
-              isCompleted={habit.completions[dateKey] || false}
+              habit={{
+                id: habit.id,
+                name: habit.name,
+                description: habit.description,
+                icon: habit.icon,
+                color: habit.color,
+                category: habit.category,
+                priority: habit.priority,
+              }}
+              streak={getHabitStreak(habit.id)}
+              isCompleted={isCompleted(habit.id, dateKey)}
+              note={getNote(habit.id, dateKey)}
               onToggle={() => toggleHabitCompletion(habit.id, dateKey)}
               onEdit={() => {}}
               onDelete={() => deleteHabit(habit.id)}
@@ -195,6 +227,16 @@ const Habits: React.FC = () => {
           ))}
         </div>
       )}
+
+      {/* Floating Add Button (Mobile) */}
+      <Button
+        variant="gradient"
+        size="lg"
+        className="fixed bottom-24 right-4 md:hidden rounded-full w-14 h-14 p-0 shadow-lg"
+        onClick={() => setShowAddModal(true)}
+      >
+        <Plus className="w-6 h-6" />
+      </Button>
 
       {/* Add Habit Modal */}
       <AddHabitModal
