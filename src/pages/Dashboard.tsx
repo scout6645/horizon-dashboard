@@ -3,12 +3,16 @@ import { format } from 'date-fns';
 import { Plus, Flame, Target, Trophy, Zap, Loader2 } from 'lucide-react';
 import { useHabitsDB } from '@/hooks/useHabitsDB';
 import { useAIInsights } from '@/hooks/useAIInsights';
+import { useLifeScore } from '@/hooks/useLifeScore';
+import { useNotifications } from '@/hooks/useNotifications';
 import { StatsCard } from '@/components/dashboard/StatsCard';
 import { XPProgress } from '@/components/dashboard/XPProgress';
 import { TodayProgress } from '@/components/dashboard/TodayProgress';
 import { WeeklyChart } from '@/components/dashboard/WeeklyChart';
 import { HeatmapCalendar } from '@/components/dashboard/HeatmapCalendar';
 import { AIInsightCard } from '@/components/dashboard/AIInsightCard';
+import { LifePerformanceScore } from '@/components/dashboard/LifePerformanceScore';
+import { PerfectDayBanner } from '@/components/dashboard/PerfectDayBanner';
 import { HabitCard } from '@/components/habits/HabitCard';
 import { AddHabitModal } from '@/components/habits/AddHabitModal';
 import { Button } from '@/components/ui/button';
@@ -16,48 +20,43 @@ import { Button } from '@/components/ui/button';
 const Dashboard: React.FC = () => {
   const [showAddModal, setShowAddModal] = React.useState(false);
   const {
-    habits,
-    profile,
-    loading,
-    addHabit,
-    toggleHabitCompletion,
-    deleteHabit,
-    addNote,
-    getHabitStreak,
-    getTodayProgress,
-    getWeeklyStats,
-    getCompletionHeatmap,
-    getOverallStreak,
-    isCompleted,
-    getNote,
+    habits, completions, profile, loading,
+    addHabit, toggleHabitCompletion, deleteHabit, addNote,
+    getHabitStreak, getTodayProgress, getWeeklyStats,
+    getCompletionHeatmap, getOverallStreak, isCompleted, getNote,
   } = useHabitsDB();
-  
-  // Convert habits to the format expected by useAIInsights
-  const habitsForInsights = habits.map(h => ({
-    ...h,
-    category: h.category as any,
-    frequency: h.frequency as 'daily' | 'weekly',
-    createdAt: h.created_at,
-    completions: {},
-    notes: {},
-  }));
-  
-  const statsForInsights = {
-    totalXP: profile?.total_xp || 0,
-    level: profile?.level || 1,
-    currentStreak: getOverallStreak(),
-    longestStreak: profile?.longest_streak || 0,
-    habitsCompleted: 0,
-    perfectDays: 0,
-    achievements: [],
-  };
-  
-  const { insights } = useAIInsights(habitsForInsights, statsForInsights);
 
+  const lifeScore = useLifeScore(habits, completions, profile);
+  const { notify, scheduleStreakReminder } = useNotifications();
+
+  // Notify on perfect day
   const todayProgress = getTodayProgress();
+  const todayKey = format(new Date(), 'yyyy-MM-dd');
+  const isPerfectDay = todayProgress.total > 0 && todayProgress.completed === todayProgress.total;
+
+  React.useEffect(() => {
+    if (isPerfectDay) {
+      notify('🔥 Perfect Discipline Day!', 'You completed all your habits today!');
+    }
+  }, [isPerfectDay, notify]);
+
+  React.useEffect(() => {
+    const streak = getOverallStreak();
+    if (streak > 0) scheduleStreakReminder(streak);
+  }, [getOverallStreak, scheduleStreakReminder]);
+
+  const habitsForInsights = habits.map(h => ({
+    ...h, category: h.category as any, frequency: h.frequency as 'daily' | 'weekly',
+    createdAt: h.created_at, completions: {}, notes: {},
+  }));
+  const statsForInsights = {
+    totalXP: profile?.total_xp || 0, level: profile?.level || 1,
+    currentStreak: getOverallStreak(), longestStreak: profile?.longest_streak || 0,
+    habitsCompleted: 0, perfectDays: 0, achievements: [],
+  };
+  const { insights } = useAIInsights(habitsForInsights, statsForInsights);
   const weeklyStats = getWeeklyStats();
   const heatmapData = getCompletionHeatmap();
-  const todayKey = format(new Date(), 'yyyy-MM-dd');
   const currentStreak = getOverallStreak();
 
   if (loading) {
@@ -71,24 +70,28 @@ const Dashboard: React.FC = () => {
   return (
     <div className="min-h-screen p-4 md:p-6 lg:p-8">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-foreground">
             Good {new Date().getHours() < 12 ? 'Morning' : new Date().getHours() < 18 ? 'Afternoon' : 'Evening'} 👋
           </h1>
-          <p className="text-muted-foreground mt-1">
-            {format(new Date(), 'EEEE, MMMM d, yyyy')}
-          </p>
+          <p className="text-muted-foreground mt-1">{format(new Date(), 'EEEE, MMMM d, yyyy')}</p>
         </div>
-        <Button 
-          variant="gradient" 
-          size="lg"
-          onClick={() => setShowAddModal(true)}
-          className="w-full md:w-auto"
-        >
-          <Plus className="w-5 h-5 mr-2" />
-          Add Habit
+        <Button variant="gradient" size="lg" onClick={() => setShowAddModal(true)} className="w-full md:w-auto">
+          <Plus className="w-5 h-5 mr-2" /> Add Habit
         </Button>
+      </div>
+
+      {/* Perfect Day Banner */}
+      <PerfectDayBanner
+        isPerfectDay={isPerfectDay}
+        perfectDaysThisMonth={lifeScore.perfectDaysThisMonth}
+        streak={currentStreak}
+      />
+
+      {/* Life Performance Score */}
+      <div className="mt-4 mb-6">
+        <LifePerformanceScore score={lifeScore} />
       </div>
 
       {/* AI Insights */}
@@ -102,61 +105,28 @@ const Dashboard: React.FC = () => {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <StatsCard
-          title="Current Streak"
-          value={`${currentStreak}d`}
-          subtitle="Keep it going!"
-          icon={Flame}
-          variant="accent"
-        />
-        <StatsCard
-          title="Habits Today"
-          value={`${todayProgress.completed}/${todayProgress.total}`}
-          subtitle={`${Math.round(todayProgress.percentage)}% complete`}
-          icon={Target}
-          variant="success"
-        />
-        <StatsCard
-          title="Total XP"
-          value={(profile?.total_xp || 0).toLocaleString()}
-          subtitle={`Level ${profile?.level || 1}`}
-          icon={Zap}
-          variant="level"
-        />
-        <StatsCard
-          title="Achievements"
-          value="0"
-          subtitle="Keep going!"
-          icon={Trophy}
-          variant="primary"
-        />
+        <StatsCard title="Current Streak" value={`${currentStreak}d`} subtitle="Keep it going!" icon={Flame} variant="accent" />
+        <StatsCard title="Habits Today" value={`${todayProgress.completed}/${todayProgress.total}`} subtitle={`${Math.round(todayProgress.percentage)}% complete`} icon={Target} variant="success" />
+        <StatsCard title="Total XP" value={(profile?.total_xp || 0).toLocaleString()} subtitle={`Level ${profile?.level || 1}`} icon={Zap} variant="level" />
+        <StatsCard title="Perfect Days" value={lifeScore.perfectDaysCount.toString()} subtitle={`${lifeScore.perfectDaysThisMonth} this month`} icon={Trophy} variant="primary" />
       </div>
 
       {/* Main Content Grid */}
       <div className="grid lg:grid-cols-3 gap-6">
-        {/* Left Column - Today's Habits */}
         <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-foreground">Today's Habits</h2>
-            <span className="text-sm text-muted-foreground">
-              {todayProgress.completed} of {todayProgress.total} completed
-            </span>
+            <span className="text-sm text-muted-foreground">{todayProgress.completed} of {todayProgress.total} completed</span>
           </div>
-
           {habits.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-border p-8 text-center">
               <div className="w-16 h-16 mx-auto mb-4 rounded-2xl gradient-primary flex items-center justify-center">
                 <Plus className="w-8 h-8 text-primary-foreground" />
               </div>
-              <h3 className="text-lg font-semibold text-foreground mb-2">
-                No habits yet
-              </h3>
-              <p className="text-muted-foreground mb-4 max-w-sm mx-auto">
-                Start building your routine by adding your first habit. Small consistent actions lead to big results!
-              </p>
+              <h3 className="text-lg font-semibold text-foreground mb-2">No habits yet</h3>
+              <p className="text-muted-foreground mb-4 max-w-sm mx-auto">Start building your routine by adding your first habit.</p>
               <Button variant="gradient" onClick={() => setShowAddModal(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Create First Habit
+                <Plus className="w-4 h-4 mr-2" /> Create First Habit
               </Button>
             </div>
           ) : (
@@ -164,15 +134,7 @@ const Dashboard: React.FC = () => {
               {habits.map((habit) => (
                 <HabitCard
                   key={habit.id}
-                  habit={{
-                    id: habit.id,
-                    name: habit.name,
-                    description: habit.description,
-                    icon: habit.icon,
-                    color: habit.color,
-                    category: habit.category,
-                    priority: habit.priority,
-                  }}
+                  habit={{ id: habit.id, name: habit.name, description: habit.description, icon: habit.icon, color: habit.color, category: habit.category, priority: habit.priority }}
                   streak={getHabitStreak(habit.id)}
                   isCompleted={isCompleted(habit.id, todayKey)}
                   note={getNote(habit.id, todayKey)}
@@ -185,39 +147,24 @@ const Dashboard: React.FC = () => {
             </div>
           )}
         </div>
-
-        {/* Right Column - Stats */}
         <div className="space-y-6">
-          <TodayProgress 
-            completed={todayProgress.completed} 
-            total={todayProgress.total} 
-          />
+          <TodayProgress completed={todayProgress.completed} total={todayProgress.total} />
           <XPProgress xp={profile?.total_xp || 0} level={profile?.level || 1} />
         </div>
       </div>
 
-      {/* Charts Section */}
+      {/* Charts */}
       <div className="grid lg:grid-cols-2 gap-6 mt-6">
         <WeeklyChart data={weeklyStats} />
         <HeatmapCalendar data={heatmapData} maxHabits={habits.length} />
       </div>
 
-      {/* Floating Add Button (Mobile) */}
-      <Button
-        variant="gradient"
-        size="lg"
-        className="fixed bottom-24 right-4 md:hidden rounded-full w-14 h-14 p-0 shadow-lg"
-        onClick={() => setShowAddModal(true)}
-      >
+      {/* FAB */}
+      <Button variant="gradient" size="lg" className="fixed bottom-24 right-4 md:hidden rounded-full w-14 h-14 p-0 shadow-lg" onClick={() => setShowAddModal(true)}>
         <Plus className="w-6 h-6" />
       </Button>
 
-      {/* Add Habit Modal */}
-      <AddHabitModal
-        isOpen={showAddModal}
-        onClose={() => setShowAddModal(false)}
-        onAdd={addHabit}
-      />
+      <AddHabitModal isOpen={showAddModal} onClose={() => setShowAddModal(false)} onAdd={addHabit} />
     </div>
   );
 };
