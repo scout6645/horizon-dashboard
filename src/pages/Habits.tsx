@@ -27,6 +27,7 @@ const CATEGORY_CONFIG: Record<string, { label: string; icon: string; color: stri
 
 const Habits: React.FC = () => {
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingHabit, setEditingHabit] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -35,6 +36,7 @@ const Habits: React.FC = () => {
     habits,
     loading,
     addHabit,
+    updateHabit,
     toggleHabitCompletion,
     deleteHabit,
     addNote,
@@ -220,7 +222,7 @@ const Habits: React.FC = () => {
               isCompleted={isCompleted(habit.id, dateKey)}
               note={getNote(habit.id, dateKey)}
               onToggle={() => toggleHabitCompletion(habit.id, dateKey)}
-              onEdit={() => {}}
+              onEdit={() => setEditingHabit(habit)}
               onDelete={() => deleteHabit(habit.id)}
               onAddNote={(note) => addNote(habit.id, note, dateKey)}
             />
@@ -243,6 +245,16 @@ const Habits: React.FC = () => {
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
         onAdd={addHabit}
+      />
+      <AddHabitModal
+        isOpen={!!editingHabit}
+        onClose={() => setEditingHabit(null)}
+        onAdd={async (data) => {
+          if (editingHabit) {
+            await updateHabit(editingHabit.id, data);
+          }
+        }}
+        editHabit={editingHabit}
       />
     </div>
   );

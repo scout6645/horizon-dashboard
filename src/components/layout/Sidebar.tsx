@@ -45,8 +45,8 @@ export const Sidebar: React.FC = () => {
             <Sparkles className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-sidebar-foreground">HabitFlow</h1>
-            <p className="text-xs text-muted-foreground">Build better habits</p>
+            <h1 className="text-xl font-bold text-sidebar-foreground">DisciplineX</h1>
+            <p className="text-xs text-muted-foreground">Life Operating System</p>
           </div>
         </div>
       </div>

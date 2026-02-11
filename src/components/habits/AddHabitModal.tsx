@@ -70,6 +70,17 @@ export const AddHabitModal: React.FC<AddHabitModalProps> = ({
   const [priority, setPriority] = useState(editHabit?.priority || 'medium');
   const [loading, setLoading] = useState(false);
 
+  React.useEffect(() => {
+    if (editHabit) {
+      setName(editHabit.name);
+      setDescription(editHabit.description || '');
+      setCategory(editHabit.category);
+      setIcon(editHabit.icon);
+      setFrequency(editHabit.frequency);
+      setPriority(editHabit.priority);
+    }
+  }, [editHabit]);
+
   const selectedCategory = CATEGORIES.find(c => c.key === category) || CATEGORIES[3];
 
   const handleSubmit = async (e: React.FormEvent) => {

@@ -69,7 +69,7 @@ const Landing: React.FC = () => {
               <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
                 <Sparkles className="w-6 h-6 text-white" />
               </div>
-              <span className="text-xl font-bold text-foreground">HabitFlow</span>
+              <span className="text-xl font-bold text-foreground">DisciplineX</span>
             </div>
             
             <div className="flex items-center gap-4">
@@ -97,17 +97,17 @@ const Landing: React.FC = () => {
         <div className="max-w-5xl mx-auto text-center relative z-10">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6 animate-scale-in">
             <Zap className="w-4 h-4" />
-            AI-Powered Habit Tracking
+            Life Operating System
           </div>
           
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground leading-tight mb-6 animate-slide-up">
-            Build Better Habits.
-            <span className="block text-gradient">Transform Your Life.</span>
+            Master Your Discipline.
+            <span className="block text-gradient">Operate Your Life.</span>
           </h1>
           
           <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 animate-slide-up" style={{ animationDelay: '0.1s' }}>
-            Track habits, earn achievements, and get AI-powered insights to unlock your full potential. 
-            The ultimate productivity companion, completely free.
+            Track habits, build streaks, and get AI-powered insights to unlock your full potential. 
+            Your personal life operating system, completely free.
           </p>
           
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-slide-up" style={{ animationDelay: '0.2s' }}>
@@ -177,10 +177,10 @@ const Landing: React.FC = () => {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
               <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-6">
-                Why Choose HabitFlow?
+                Why Choose DisciplineX?
               </h2>
               <p className="text-lg text-muted-foreground mb-8">
-                We've built the most comprehensive habit tracking platform, completely free. 
+                We've built the most comprehensive discipline tracking platform, completely free. 
                 No hidden fees, no premium tiers, just pure productivity tools.
               </p>
               
@@ -225,7 +225,7 @@ const Landing: React.FC = () => {
             Ready to Transform Your Habits?
           </h2>
           <p className="text-lg text-muted-foreground mb-8">
-            Join HabitFlow today and start your journey to a more productive you.
+            Join DisciplineX today and start your journey to a more disciplined you.
           </p>
           
           <Link to="/auth">
@@ -245,11 +245,11 @@ const Landing: React.FC = () => {
               <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
                 <Sparkles className="w-5 h-5 text-white" />
               </div>
-              <span className="font-semibold text-foreground">HabitFlow</span>
+              <span className="font-semibold text-foreground">DisciplineX</span>
             </div>
             
             <p className="text-sm text-muted-foreground">
-              © 2026 HabitFlow. Built for your success.
+              © 2026 DisciplineX. Built for your success.
             </p>
           </div>
         </div>

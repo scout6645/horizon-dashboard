@@ -122,10 +122,10 @@ const Auth: React.FC = () => {
             <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
               <Sparkles className="w-7 h-7 text-white" />
             </div>
-            <h1 className="text-3xl font-bold text-white">HabitFlow</h1>
+            <h1 className="text-3xl font-bold text-white">DisciplineX</h1>
           </div>
           <p className="text-white/80 text-lg mt-4 max-w-md">
-            Build better habits, track your progress, and unlock your potential with AI-powered insights.
+            Master discipline, track your progress, and unlock your potential with AI-powered insights.
           </p>
         </div>
         
@@ -162,7 +162,7 @@ const Auth: React.FC = () => {
         </div>
         
         <p className="relative z-10 text-white/60 text-sm">
-          © 2026 HabitFlow. Built for your success.
+          © 2026 DisciplineX. Built for your success.
         </p>
       </div>
       
@@ -174,7 +174,7 @@ const Auth: React.FC = () => {
             <div className="w-12 h-12 rounded-2xl gradient-primary flex items-center justify-center">
               <Sparkles className="w-7 h-7 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-foreground">HabitFlow</h1>
+            <h1 className="text-2xl font-bold text-foreground">DisciplineX</h1>
           </div>
           
           <div className="text-center lg:text-left">

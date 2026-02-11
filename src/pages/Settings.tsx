@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Settings as SettingsIcon, 
   Sun, 
@@ -8,21 +8,45 @@ import {
   Trash2, 
   User,
   Palette,
-  LogOut
+  LogOut,
+  Save,
+  Pencil
 } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
 import { useHabitsDB } from '@/hooks/useHabitsDB';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const Settings: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
-  const { habits, profile } = useHabitsDB();
+  const { habits, profile, refetch } = useHabitsDB();
   const { user, signOut } = useAuth();
   const { toast } = useToast();
+  const [editingName, setEditingName] = useState(false);
+  const [displayName, setDisplayName] = useState(profile?.full_name || '');
+
+  React.useEffect(() => {
+    if (profile?.full_name) setDisplayName(profile.full_name);
+  }, [profile?.full_name]);
+
+  const handleSaveName = async () => {
+    if (!user) return;
+    const { error } = await supabase
+      .from('profiles')
+      .update({ full_name: displayName.trim() })
+      .eq('user_id', user.id);
+    if (!error) {
+      toast({ title: "Name updated! ✨", description: "Your display name has been saved." });
+      setEditingName(false);
+      refetch();
+    }
+  };
 
   const handleExportData = () => {
     const data = {
@@ -35,7 +59,7 @@ const Settings: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `habitflow-export-${format(new Date(), 'yyyy-MM-dd')}.json`;
+    a.download = `disciplinex-export-${format(new Date(), 'yyyy-MM-dd')}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -76,14 +100,36 @@ const Settings: React.FC = () => {
               <User className="w-8 h-8 text-primary-foreground" />
             </div>
             <div className="flex-1">
-              <h3 className="font-semibold text-foreground">{user?.email || 'Guest User'}</h3>
+              <h3 className="font-semibold text-foreground">{profile?.full_name || user?.email || 'Guest User'}</h3>
+              <p className="text-xs text-muted-foreground">{user?.email}</p>
               <p className="text-sm text-muted-foreground">Free Plan</p>
               <p className="text-xs text-muted-foreground mt-1">
                 Level {profile?.level || 1} • {profile?.total_xp || 0} XP
               </p>
             </div>
           </div>
-          <div className="mt-4">
+          <div className="mt-4 space-y-3">
+            <div>
+              <Label className="text-sm font-medium text-foreground">Display Name</Label>
+              <div className="flex gap-2 mt-1">
+                <Input
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  placeholder="Enter your name"
+                  disabled={!editingName}
+                  className="h-10"
+                />
+                {editingName ? (
+                  <Button size="sm" onClick={handleSaveName} className="h-10">
+                    <Save className="w-4 h-4" />
+                  </Button>
+                ) : (
+                  <Button size="sm" variant="outline" onClick={() => setEditingName(true)} className="h-10">
+                    <Pencil className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
+            </div>
             <Button variant="outline" onClick={handleSignOut} className="w-full">
               <LogOut className="w-4 h-4 mr-2" />
               Sign Out
@@ -143,7 +189,7 @@ const Settings: React.FC = () => {
                   if ('Notification' in window) {
                     Notification.requestPermission().then(permission => {
                       if (permission === 'granted') {
-                        new Notification('HabitFlow', {
+                        new Notification('DisciplineX', {
                           body: 'Notifications enabled! You\'ll receive habit reminders.',
                           icon: '/favicon.ico'
                         });
@@ -187,7 +233,7 @@ const Settings: React.FC = () => {
           <div className="w-12 h-12 mx-auto mb-3 rounded-xl gradient-primary flex items-center justify-center">
             <span className="text-xl">✨</span>
           </div>
-          <h3 className="font-semibold text-foreground">HabitFlow</h3>
+          <h3 className="font-semibold text-foreground">DisciplineX</h3>
           <p className="text-sm text-muted-foreground">Version 1.0.0</p>
           <p className="text-xs text-muted-foreground mt-2">
             Built with ❤️ for better habits
