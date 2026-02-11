@@ -19,9 +19,10 @@ import { Button } from '@/components/ui/button';
 
 const Dashboard: React.FC = () => {
   const [showAddModal, setShowAddModal] = React.useState(false);
+  const [editingHabit, setEditingHabit] = React.useState<any>(null);
   const {
     habits, completions, profile, loading,
-    addHabit, toggleHabitCompletion, deleteHabit, addNote,
+    addHabit, updateHabit, toggleHabitCompletion, deleteHabit, addNote,
     getHabitStreak, getTodayProgress, getWeeklyStats,
     getCompletionHeatmap, getOverallStreak, isCompleted, getNote,
   } = useHabitsDB();
@@ -73,7 +74,7 @@ const Dashboard: React.FC = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-foreground">
-            Good {new Date().getHours() < 12 ? 'Morning' : new Date().getHours() < 18 ? 'Afternoon' : 'Evening'} 👋
+            Good {new Date().getHours() < 12 ? 'Morning' : new Date().getHours() < 18 ? 'Afternoon' : 'Evening'}{profile?.full_name ? `, ${profile.full_name}` : ''} 👋
           </h1>
           <p className="text-muted-foreground mt-1">{format(new Date(), 'EEEE, MMMM d, yyyy')}</p>
         </div>
@@ -139,7 +140,7 @@ const Dashboard: React.FC = () => {
                   isCompleted={isCompleted(habit.id, todayKey)}
                   note={getNote(habit.id, todayKey)}
                   onToggle={() => toggleHabitCompletion(habit.id)}
-                  onEdit={() => {}}
+                  onEdit={() => setEditingHabit(habit)}
                   onDelete={() => deleteHabit(habit.id)}
                   onAddNote={(note) => addNote(habit.id, note)}
                 />
@@ -165,6 +166,16 @@ const Dashboard: React.FC = () => {
       </Button>
 
       <AddHabitModal isOpen={showAddModal} onClose={() => setShowAddModal(false)} onAdd={addHabit} />
+      <AddHabitModal
+        isOpen={!!editingHabit}
+        onClose={() => setEditingHabit(null)}
+        onAdd={async (data) => {
+          if (editingHabit) {
+            await updateHabit(editingHabit.id, data);
+          }
+        }}
+        editHabit={editingHabit}
+      />
     </div>
   );
 };
