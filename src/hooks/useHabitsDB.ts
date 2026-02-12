@@ -16,6 +16,10 @@ export interface DBHabit {
   sort_order: number;
   created_at: string;
   user_id: string;
+  habit_type: string;
+  target_value: number | null;
+  unit_label: string | null;
+  reminder_time: string | null;
 }
 
 export interface DBCompletion {
@@ -25,6 +29,7 @@ export interface DBCompletion {
   completed_date: string;
   note: string | null;
   created_at: string;
+  value: number | null;
 }
 
 export interface DBProfile {
@@ -185,6 +190,57 @@ export const useHabitsDB = () => {
   }, [user, toast]);
 
   // Toggle completion
+  // Log a value for number/time habits
+  const logHabitValue = useCallback(async (habitId: string, value: number, date?: string) => {
+    if (!user) return;
+
+    const dateKey = date || getTodayKey();
+    const existingCompletion = completions.find(
+      c => c.habit_id === habitId && c.completed_date === dateKey
+    );
+
+    try {
+      if (existingCompletion) {
+        const { error } = await supabase
+          .from('habit_completions')
+          .update({ value })
+          .eq('id', existingCompletion.id);
+
+        if (error) throw error;
+
+        setCompletions(prev => prev.map(c =>
+          c.id === existingCompletion.id ? { ...c, value } : c
+        ));
+      } else {
+        const { data, error } = await supabase
+          .from('habit_completions')
+          .insert({
+            habit_id: habitId,
+            user_id: user.id,
+            completed_date: dateKey,
+            value,
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        setCompletions(prev => [...prev, data]);
+
+        // Update XP
+        if (profile) {
+          const newXP = profile.total_xp + XP_PER_COMPLETION;
+          await supabase
+            .from('profiles')
+            .update({ total_xp: newXP, level: Math.floor(Math.sqrt(newXP / 100)) + 1 })
+            .eq('user_id', user.id);
+          setProfile(prev => prev ? { ...prev, total_xp: newXP, level: Math.floor(Math.sqrt(newXP / 100)) + 1 } : null);
+        }
+      }
+    } catch (error) {
+      console.error('Error logging habit value:', error);
+    }
+  }, [user, completions, profile]);
+
   const toggleHabitCompletion = useCallback(async (habitId: string, date?: string) => {
     if (!user) return;
 
@@ -393,6 +449,13 @@ export const useHabitsDB = () => {
     return streak;
   }, [habits, completions]);
 
+  // Get logged value for a habit on a date
+  const getHabitValue = useCallback((habitId: string, date?: string): number | null => {
+    const dateKey = date || getTodayKey();
+    const completion = completions.find(c => c.habit_id === habitId && c.completed_date === dateKey);
+    return completion?.value ?? null;
+  }, [completions]);
+
   return {
     habits,
     completions,
@@ -402,9 +465,11 @@ export const useHabitsDB = () => {
     updateHabit,
     deleteHabit,
     toggleHabitCompletion,
+    logHabitValue,
     addNote,
     isCompleted,
     getNote,
+    getHabitValue,
     getHabitStreak,
     getTodayProgress,
     getWeeklyStats,

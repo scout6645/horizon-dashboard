@@ -43,6 +43,7 @@ export type Database = {
           id: string
           note: string | null
           user_id: string
+          value: number | null
         }
         Insert: {
           completed_date?: string
@@ -51,6 +52,7 @@ export type Database = {
           id?: string
           note?: string | null
           user_id: string
+          value?: number | null
         }
         Update: {
           completed_date?: string
@@ -59,6 +61,7 @@ export type Database = {
           id?: string
           note?: string | null
           user_id?: string
+          value?: number | null
         }
         Relationships: [
           {
@@ -77,11 +80,15 @@ export type Database = {
           created_at: string
           description: string | null
           frequency: string
+          habit_type: string
           icon: string
           id: string
           name: string
           priority: string
+          reminder_time: string | null
           sort_order: number
+          target_value: number | null
+          unit_label: string | null
           updated_at: string
           user_id: string
         }
@@ -91,11 +98,15 @@ export type Database = {
           created_at?: string
           description?: string | null
           frequency?: string
+          habit_type?: string
           icon?: string
           id?: string
           name: string
           priority?: string
+          reminder_time?: string | null
           sort_order?: number
+          target_value?: number | null
+          unit_label?: string | null
           updated_at?: string
           user_id: string
         }
@@ -105,11 +116,15 @@ export type Database = {
           created_at?: string
           description?: string | null
           frequency?: string
+          habit_type?: string
           icon?: string
           id?: string
           name?: string
           priority?: string
+          reminder_time?: string | null
           sort_order?: number
+          target_value?: number | null
+          unit_label?: string | null
           updated_at?: string
           user_id?: string
         }

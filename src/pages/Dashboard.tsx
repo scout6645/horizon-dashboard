@@ -22,9 +22,9 @@ const Dashboard: React.FC = () => {
   const [editingHabit, setEditingHabit] = React.useState<any>(null);
   const {
     habits, completions, profile, loading,
-    addHabit, updateHabit, toggleHabitCompletion, deleteHabit, addNote,
+    addHabit, updateHabit, toggleHabitCompletion, logHabitValue, deleteHabit, addNote,
     getHabitStreak, getTodayProgress, getWeeklyStats,
-    getCompletionHeatmap, getOverallStreak, isCompleted, getNote,
+    getCompletionHeatmap, getOverallStreak, isCompleted, getNote, getHabitValue,
   } = useHabitsDB();
 
   const lifeScore = useLifeScore(habits, completions, profile);
@@ -135,11 +135,13 @@ const Dashboard: React.FC = () => {
               {habits.map((habit) => (
                 <HabitCard
                   key={habit.id}
-                  habit={{ id: habit.id, name: habit.name, description: habit.description, icon: habit.icon, color: habit.color, category: habit.category, priority: habit.priority }}
+                  habit={{ id: habit.id, name: habit.name, description: habit.description, icon: habit.icon, color: habit.color, category: habit.category, priority: habit.priority, habit_type: habit.habit_type, target_value: habit.target_value, unit_label: habit.unit_label }}
                   streak={getHabitStreak(habit.id)}
                   isCompleted={isCompleted(habit.id, todayKey)}
+                  loggedValue={getHabitValue(habit.id, todayKey)}
                   note={getNote(habit.id, todayKey)}
                   onToggle={() => toggleHabitCompletion(habit.id)}
+                  onLogValue={(val) => logHabitValue(habit.id, val)}
                   onEdit={() => setEditingHabit(habit)}
                   onDelete={() => deleteHabit(habit.id)}
                   onAddNote={(note) => addNote(habit.id, note)}

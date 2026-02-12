@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
-import { X, Plus, Save } from 'lucide-react';
+import { X, Plus, Save, Clock, Hash, CheckSquare, Timer, Ruler } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -13,28 +13,25 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 
+interface HabitFormData {
+  name: string;
+  description: string | null;
+  icon: string;
+  color: string;
+  category: string;
+  frequency: string;
+  priority: string;
+  habit_type: string;
+  target_value: number | null;
+  unit_label: string | null;
+  reminder_time: string | null;
+}
+
 interface AddHabitModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAdd: (habit: {
-    name: string;
-    description: string | null;
-    icon: string;
-    color: string;
-    category: string;
-    frequency: string;
-    priority: string;
-  }) => Promise<any>;
-  editHabit?: {
-    id: string;
-    name: string;
-    description: string | null;
-    icon: string;
-    color: string;
-    category: string;
-    frequency: string;
-    priority: string;
-  };
+  onAdd: (habit: HabitFormData) => Promise<any>;
+  editHabit?: Partial<HabitFormData> & { id: string };
 }
 
 const HABIT_ICONS = ['⭐', '💪', '📚', '🧘', '🏃', '💊', '🥗', '💧', '😴', '🎯', '✍️', '🎨'];
@@ -51,9 +48,24 @@ const CATEGORIES = [
 ];
 
 const PRIORITIES = [
-  { key: 'low', label: 'Low', color: 'text-muted-foreground' },
-  { key: 'medium', label: 'Medium', color: 'text-accent' },
-  { key: 'high', label: 'High', color: 'text-destructive' },
+  { key: 'low', label: 'Low' },
+  { key: 'medium', label: 'Medium' },
+  { key: 'high', label: 'High' },
+];
+
+const HABIT_TYPES = [
+  { key: 'checkbox', label: 'Checkbox', icon: CheckSquare, desc: 'Done / Not done' },
+  { key: 'number', label: 'Number', icon: Hash, desc: 'Track a count' },
+  { key: 'time_duration', label: 'Duration', icon: Timer, desc: 'Track HH:MM' },
+  { key: 'fixed_time', label: 'Fixed Time', icon: Clock, desc: 'Wake/sleep time' },
+  { key: 'custom_unit', label: 'Custom Unit', icon: Ruler, desc: '₹, km, cal...' },
+];
+
+const FREQUENCIES = [
+  { key: 'daily', label: 'Daily' },
+  { key: 'weekly', label: 'Weekly' },
+  { key: 'weekdays', label: 'Weekdays' },
+  { key: 'weekends', label: 'Weekends' },
 ];
 
 export const AddHabitModal: React.FC<AddHabitModalProps> = ({
@@ -62,26 +74,71 @@ export const AddHabitModal: React.FC<AddHabitModalProps> = ({
   onAdd,
   editHabit,
 }) => {
-  const [name, setName] = useState(editHabit?.name || '');
-  const [description, setDescription] = useState(editHabit?.description || '');
-  const [category, setCategory] = useState(editHabit?.category || 'productivity');
-  const [icon, setIcon] = useState(editHabit?.icon || '⭐');
-  const [frequency, setFrequency] = useState(editHabit?.frequency || 'daily');
-  const [priority, setPriority] = useState(editHabit?.priority || 'medium');
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [category, setCategory] = useState('productivity');
+  const [icon, setIcon] = useState('⭐');
+  const [frequency, setFrequency] = useState('daily');
+  const [priority, setPriority] = useState('medium');
+  const [habitType, setHabitType] = useState('checkbox');
+  const [targetValue, setTargetValue] = useState('');
+  const [unitLabel, setUnitLabel] = useState('');
+  const [targetHours, setTargetHours] = useState('');
+  const [targetMinutes, setTargetMinutes] = useState('');
+  const [reminderTime, setReminderTime] = useState('');
   const [loading, setLoading] = useState(false);
 
   React.useEffect(() => {
     if (editHabit) {
-      setName(editHabit.name);
+      setName(editHabit.name || '');
       setDescription(editHabit.description || '');
-      setCategory(editHabit.category);
-      setIcon(editHabit.icon);
-      setFrequency(editHabit.frequency);
-      setPriority(editHabit.priority);
+      setCategory(editHabit.category || 'productivity');
+      setIcon(editHabit.icon || '⭐');
+      setFrequency(editHabit.frequency || 'daily');
+      setPriority(editHabit.priority || 'medium');
+      setHabitType(editHabit.habit_type || 'checkbox');
+      setUnitLabel(editHabit.unit_label || '');
+      setReminderTime(editHabit.reminder_time || '');
+      
+      if (editHabit.habit_type === 'time_duration' && editHabit.target_value) {
+        setTargetHours(String(Math.floor(editHabit.target_value / 60)));
+        setTargetMinutes(String(editHabit.target_value % 60));
+      } else {
+        setTargetValue(editHabit.target_value ? String(editHabit.target_value) : '');
+        setTargetHours('');
+        setTargetMinutes('');
+      }
+    } else {
+      resetForm();
     }
   }, [editHabit]);
 
+  const resetForm = () => {
+    setName('');
+    setDescription('');
+    setCategory('productivity');
+    setIcon('⭐');
+    setFrequency('daily');
+    setPriority('medium');
+    setHabitType('checkbox');
+    setTargetValue('');
+    setUnitLabel('');
+    setTargetHours('');
+    setTargetMinutes('');
+    setReminderTime('');
+  };
+
   const selectedCategory = CATEGORIES.find(c => c.key === category) || CATEGORIES[3];
+
+  const computeTargetValue = (): number | null => {
+    if (habitType === 'checkbox') return null;
+    if (habitType === 'time_duration') {
+      const h = parseInt(targetHours) || 0;
+      const m = parseInt(targetMinutes) || 0;
+      return h * 60 + m || null;
+    }
+    return parseFloat(targetValue) || null;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,30 +154,23 @@ export const AddHabitModal: React.FC<AddHabitModalProps> = ({
         color: selectedCategory.color,
         frequency,
         priority,
+        habit_type: habitType,
+        target_value: computeTargetValue(),
+        unit_label: (habitType === 'number' || habitType === 'custom_unit') ? (unitLabel.trim() || null) : null,
+        reminder_time: reminderTime || null,
       });
 
-      // Reset form
-      setName('');
-      setDescription('');
-      setCategory('productivity');
-      setIcon('⭐');
-      setFrequency('daily');
-      setPriority('medium');
+      resetForm();
       onClose();
     } catch (error) {
-      console.error('Error adding habit:', error);
+      console.error('Error saving habit:', error);
     } finally {
       setLoading(false);
     }
   };
 
   const handleClose = () => {
-    setName('');
-    setDescription('');
-    setCategory('productivity');
-    setIcon('⭐');
-    setFrequency('daily');
-    setPriority('medium');
+    resetForm();
     onClose();
   };
 
@@ -151,6 +201,100 @@ export const AddHabitModal: React.FC<AddHabitModalProps> = ({
               className="h-12"
             />
           </div>
+
+          {/* Habit Type */}
+          <div className="space-y-2">
+            <Label>Habit Type</Label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {HABIT_TYPES.map((ht) => {
+                const Icon = ht.icon;
+                return (
+                  <button
+                    key={ht.key}
+                    type="button"
+                    onClick={() => setHabitType(ht.key)}
+                    className={cn(
+                      "flex flex-col items-center gap-1 p-3 rounded-xl transition-all text-center border",
+                      habitType === ht.key
+                        ? "border-primary bg-primary/10 ring-1 ring-primary"
+                        : "border-border hover:border-primary/30 hover:bg-secondary"
+                    )}
+                  >
+                    <Icon className="w-5 h-5" />
+                    <span className="text-xs font-medium">{ht.label}</span>
+                    <span className="text-[10px] text-muted-foreground">{ht.desc}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Conditional: Target Value for number/custom_unit */}
+          {(habitType === 'number' || habitType === 'custom_unit') && (
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Target Value</Label>
+                <Input
+                  type="number"
+                  value={targetValue}
+                  onChange={(e) => setTargetValue(e.target.value)}
+                  placeholder="e.g., 50"
+                  min="0"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Unit</Label>
+                <Input
+                  type="text"
+                  value={unitLabel}
+                  onChange={(e) => setUnitLabel(e.target.value)}
+                  placeholder={habitType === 'custom_unit' ? '₹, km, cal...' : 'reps, pages...'}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Conditional: Time Duration (HH:MM) */}
+          {habitType === 'time_duration' && (
+            <div className="space-y-2">
+              <Label>Target Duration (HH:MM)</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="number"
+                  value={targetHours}
+                  onChange={(e) => setTargetHours(e.target.value)}
+                  placeholder="HH"
+                  min="0"
+                  max="23"
+                  className="w-20 text-center"
+                />
+                <span className="text-lg font-bold text-muted-foreground">:</span>
+                <Input
+                  type="number"
+                  value={targetMinutes}
+                  onChange={(e) => setTargetMinutes(e.target.value)}
+                  placeholder="MM"
+                  min="0"
+                  max="59"
+                  className="w-20 text-center"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Conditional: Fixed Time */}
+          {habitType === 'fixed_time' && (
+            <div className="space-y-2">
+              <Label>Target Time</Label>
+              <Input
+                type="time"
+                value={targetValue}
+                onChange={(e) => setTargetValue(e.target.value)}
+                className="w-full"
+              />
+              <p className="text-xs text-muted-foreground">e.g., Wake up at 5:45 AM</p>
+            </div>
+          )}
 
           {/* Description */}
           <div className="space-y-2">
@@ -238,32 +382,33 @@ export const AddHabitModal: React.FC<AddHabitModalProps> = ({
           {/* Frequency */}
           <div className="space-y-2">
             <Label>Frequency</Label>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setFrequency('daily')}
-                className={cn(
-                  "flex-1 py-3 rounded-xl font-medium transition-all",
-                  frequency === 'daily'
-                    ? "gradient-primary text-primary-foreground"
-                    : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                )}
-              >
-                Daily
-              </button>
-              <button
-                type="button"
-                onClick={() => setFrequency('weekly')}
-                className={cn(
-                  "flex-1 py-3 rounded-xl font-medium transition-all",
-                  frequency === 'weekly'
-                    ? "gradient-primary text-primary-foreground"
-                    : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                )}
-              >
-                Weekly
-              </button>
+            <div className="grid grid-cols-2 gap-2">
+              {FREQUENCIES.map((f) => (
+                <button
+                  key={f.key}
+                  type="button"
+                  onClick={() => setFrequency(f.key)}
+                  className={cn(
+                    "py-2.5 rounded-xl font-medium transition-all text-sm",
+                    frequency === f.key
+                      ? "gradient-primary text-primary-foreground"
+                      : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                  )}
+                >
+                  {f.label}
+                </button>
+              ))}
             </div>
+          </div>
+
+          {/* Reminder Time */}
+          <div className="space-y-2">
+            <Label>Reminder Time (optional)</Label>
+            <Input
+              type="time"
+              value={reminderTime}
+              onChange={(e) => setReminderTime(e.target.value)}
+            />
           </div>
 
           {/* Actions */}

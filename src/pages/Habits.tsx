@@ -38,11 +38,13 @@ const Habits: React.FC = () => {
     addHabit,
     updateHabit,
     toggleHabitCompletion,
+    logHabitValue,
     deleteHabit,
     addNote,
     getHabitStreak,
     isCompleted,
     getNote,
+    getHabitValue,
   } = useHabitsDB();
 
   const dateKey = format(selectedDate, 'yyyy-MM-dd');
@@ -217,11 +219,16 @@ const Habits: React.FC = () => {
                 color: habit.color,
                 category: habit.category,
                 priority: habit.priority,
+                habit_type: habit.habit_type,
+                target_value: habit.target_value,
+                unit_label: habit.unit_label,
               }}
               streak={getHabitStreak(habit.id)}
               isCompleted={isCompleted(habit.id, dateKey)}
+              loggedValue={getHabitValue(habit.id, dateKey)}
               note={getNote(habit.id, dateKey)}
               onToggle={() => toggleHabitCompletion(habit.id, dateKey)}
+              onLogValue={(val) => logHabitValue(habit.id, val, dateKey)}
               onEdit={() => setEditingHabit(habit)}
               onDelete={() => deleteHabit(habit.id)}
               onAddNote={(note) => addNote(habit.id, note, dateKey)}
