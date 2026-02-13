@@ -8,11 +8,11 @@ export const LandingNavbar: React.FC = () => (
   <nav className="fixed top-0 left-0 right-0 z-50 glass-strong">
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="flex items-center justify-between h-16">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
-            <Sparkles className="w-6 h-6 text-primary-foreground" />
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 rounded-xl gradient-primary flex items-center justify-center">
+            <Sparkles className="w-5 h-5 text-primary-foreground" />
           </div>
-          <span className="text-xl font-bold text-foreground">DisciplineX</span>
+          <span className="text-lg font-bold text-foreground">DisciplineX</span>
         </div>
 
         <div className="hidden md:flex items-center gap-6">
@@ -22,7 +22,7 @@ export const LandingNavbar: React.FC = () => (
           <a href="#contact" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Contact</a>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <ThemeToggle />
           <Link to="/auth">
             <Button variant="ghost" size="sm">Sign In</Button>
