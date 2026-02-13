@@ -41,25 +41,25 @@ const plans = [
 ];
 
 export const PricingSection: React.FC = () => (
-  <section id="pricing" className="py-20 px-4 sm:px-6 lg:px-8 bg-secondary/30">
+  <section id="pricing" className="py-16 lg:py-20 px-4 sm:px-6 lg:px-8 bg-secondary/30">
     <div className="max-w-5xl mx-auto">
-      <div className="text-center mb-16">
+      <div className="text-center mb-12">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium mb-4">
           PRICING
         </div>
-        <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
+        <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-3">
           Simple, Transparent Pricing
         </h2>
-        <p className="text-lg text-muted-foreground max-w-xl mx-auto">
+        <p className="text-base sm:text-lg text-muted-foreground max-w-xl mx-auto">
           Start free and upgrade when you're ready to unlock your full potential
         </p>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-8 max-w-3xl mx-auto">
+      <div className="grid sm:grid-cols-2 gap-6 max-w-3xl mx-auto items-stretch">
         {plans.map((plan) => (
           <div
             key={plan.name}
-            className={`relative rounded-2xl p-8 border transition-all duration-300 hover:-translate-y-1 ${
+            className={`relative rounded-2xl p-6 sm:p-8 border transition-all duration-300 hover:-translate-y-1 flex flex-col ${
               plan.popular
                 ? 'border-primary/50 bg-card shadow-glow'
                 : 'border-border bg-card hover:border-primary/20'
@@ -81,7 +81,7 @@ export const PricingSection: React.FC = () => (
               </div>
             </div>
 
-            <ul className="space-y-3 mb-8">
+            <ul className="space-y-3 mb-8 flex-1">
               {plan.features.map((feature) => (
                 <li key={feature} className="flex items-center gap-3 text-sm">
                   <div className="w-5 h-5 rounded-full bg-success/20 flex items-center justify-center shrink-0">

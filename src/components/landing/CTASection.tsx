@@ -4,12 +4,12 @@ import { Button } from '@/components/ui/button';
 import { ArrowRight, Play } from 'lucide-react';
 
 export const CTASection: React.FC = () => (
-  <section className="py-20 px-4 sm:px-6 lg:px-8 bg-secondary/30">
-    <div className="max-w-4xl mx-auto text-center">
+  <section className="py-16 lg:py-20 px-4 sm:px-6 lg:px-8 bg-secondary/30">
+    <div className="max-w-3xl mx-auto text-center">
       <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
         Start Building Better Habits Today
       </h2>
-      <p className="text-lg text-muted-foreground mb-8 max-w-xl mx-auto">
+      <p className="text-base sm:text-lg text-muted-foreground mb-8 max-w-xl mx-auto">
         Join thousands of people using DisciplineX to transform their daily routine.
       </p>
 
