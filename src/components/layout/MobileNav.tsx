@@ -10,7 +10,7 @@ import {
 import { cn } from '@/lib/utils';
 
 const navItems = [
-  { icon: LayoutDashboard, label: 'Home', path: '/' },
+  { icon: LayoutDashboard, label: 'Home', path: '/dashboard' },
   { icon: ListChecks, label: 'Habits', path: '/habits' },
   { icon: Trophy, label: 'Badges', path: '/achievements' },
   { icon: BarChart3, label: 'Stats', path: '/analytics' },

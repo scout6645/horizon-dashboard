@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/tooltip';
 
 const navItems = [
-  { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
+  { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
   { icon: ListChecks, label: 'Habits', path: '/habits' },
   { icon: Trophy, label: 'Achievements', path: '/achievements' },
   { icon: BarChart3, label: 'Analytics', path: '/analytics' },
