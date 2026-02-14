@@ -20,14 +20,17 @@ const AuthCallback: React.FC = () => {
       }
     );
 
-    const timer = setTimeout(async () => {
+    // Process OAuth callback hash and poll for session (Supabase parses hash async)
+    const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         navigate('/dashboard', { replace: true });
       } else {
         navigate('/', { replace: true });
       }
-    }, 500);
+    };
+
+    const timer = setTimeout(checkSession, 800);
 
     return () => {
       subscription.unsubscribe();

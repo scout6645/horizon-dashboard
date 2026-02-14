@@ -44,13 +44,19 @@
      - `https://your-app.vercel.app/auth/callback`
    - Save. Email confirmation links will send users to `/auth/callback`, then the app redirects to `/dashboard`.
 
-3. **Optional: disable email verification**  
-   - If you want users to sign in **without** confirming email:  
-   - Supabase → **Authentication** → **Providers** → **Email**.  
-   - Turn **OFF** “Confirm email”.  
-   - Then new signups can sign in immediately; no verification email is sent.
+3. **Email verification not arriving?**  
+   - **Check spam folder** – Supabase emails often land there.  
+   - **Add redirect URL** – Authentication → URL Configuration → Redirect URLs: `https://your-app.vercel.app/auth/callback`  
+   - **Rate limits** – Free tier: ~3 emails/hour. Wait and retry.  
+   - **Optional: disable** – Authentication → Providers → Email → turn OFF “Confirm email”. Users can sign in immediately without verifying.
 
-4. **RLS**  
+4. **Google login not working?**  
+   - Supabase → **Authentication** → **Providers** → **Google** → Enable.  
+   - Create OAuth credentials: [Google Cloud Console](https://console.cloud.google.com/apis/credentials) → Create OAuth 2.0 Client ID (Web app).  
+   - **Authorized redirect URI:** `https://YOUR-PROJECT-REF.supabase.co/auth/v1/callback` (get from Supabase Google provider page).  
+   - Copy Client ID and Client Secret into Supabase Google provider settings. Save.
+
+5. **RLS**  
    - Your app uses Supabase with the anon key; RLS policies in `supabase/migrations/` apply. Run migrations in the Supabase SQL editor or via CLI if you haven’t already.
 
 ---
