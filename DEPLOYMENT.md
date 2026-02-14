@@ -38,12 +38,19 @@
 2. **Auth redirect for production**  
    - In Supabase: **Authentication** → **URL Configuration**.  
    - **Site URL:** set to your Vercel URL, e.g. `https://your-app.vercel.app`.  
-   - **Redirect URLs:** add:
+   - **Redirect URLs:** add (replace with your real Vercel URL):
      - `https://your-app.vercel.app/**`
      - `https://your-app.vercel.app/dashboard`
-   - Save. This allows login and email confirmation to work on the live site.
+     - `https://your-app.vercel.app/auth/callback`
+   - Save. Email confirmation links will send users to `/auth/callback`, then the app redirects to `/dashboard`.
 
-3. **RLS**  
+3. **Optional: disable email verification**  
+   - If you want users to sign in **without** confirming email:  
+   - Supabase → **Authentication** → **Providers** → **Email**.  
+   - Turn **OFF** “Confirm email”.  
+   - Then new signups can sign in immediately; no verification email is sent.
+
+4. **RLS**  
    - Your app uses Supabase with the anon key; RLS policies in `supabase/migrations/` apply. Run migrations in the Supabase SQL editor or via CLI if you haven’t already.
 
 ---

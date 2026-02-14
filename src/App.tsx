@@ -6,8 +6,9 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AppLayout } from "@/components/layout/AppLayout";
-import Landing from "./pages/Landing";
+import { LandingOnly } from "@/components/LandingOnly";
 import Auth from "./pages/Auth";
+import AuthCallback from "./pages/AuthCallback";
 import Dashboard from "./pages/Dashboard";
 import Habits from "./pages/Habits";
 import Achievements from "./pages/Achievements";
@@ -26,9 +27,10 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Landing />} />
+            <Route path="/" element={<LandingOnly />} />
             <Route path="/landing" element={<Navigate to="/" replace />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
             <Route element={
               <ProtectedRoute>
                 <AppLayout />
