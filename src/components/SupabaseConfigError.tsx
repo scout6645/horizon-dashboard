@@ -1,5 +1,7 @@
 import React from 'react';
-import { AlertCircle } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { AlertCircle, Settings } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 export const SupabaseConfigError: React.FC = () => (
   <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-background">
@@ -18,14 +20,22 @@ export const SupabaseConfigError: React.FC = () => (
       <p className="text-xs text-muted-foreground">
         Get them from Supabase Dashboard → Project Settings → API. Then redeploy.
       </p>
-      <a
-        href="https://supabase.com/dashboard"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-block text-sm text-primary hover:underline"
-      >
-        Open Supabase Dashboard →
-      </a>
+      <div className="flex flex-col gap-2">
+        <Link to="/setup-helper">
+          <Button variant="outline" className="w-full">
+            <Settings className="w-4 h-4 mr-2" />
+            Setup Helper – copy exact values for Supabase
+          </Button>
+        </Link>
+        <a
+          href="https://supabase.com/dashboard"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-block text-sm text-primary hover:underline text-center"
+        >
+          Open Supabase Dashboard →
+        </a>
+      </div>
     </div>
   </div>
 );

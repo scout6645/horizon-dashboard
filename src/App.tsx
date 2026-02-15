@@ -17,46 +17,50 @@ import Achievements from "./pages/Achievements";
 import Analytics from "./pages/Analytics";
 import Insights from "./pages/Insights";
 import Settings from "./pages/Settings";
+import SetupHelper from "./pages/SetupHelper";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const App = () => {
-  if (!isSupabaseConfigured) {
-    return <SupabaseConfigError />;
-  }
-
-  return (
+const App = () => (
   <QueryClientProvider client={queryClient}>
-    <AuthProvider>
+    <BrowserRouter>
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<LandingOnly />} />
-            <Route path="/landing" element={<Navigate to="/" replace />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/auth/callback" element={<AuthCallback />} />
-            <Route element={
-              <ProtectedRoute>
-                <AppLayout />
-              </ProtectedRoute>
-            }>
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/habits" element={<Habits />} />
-              <Route path="/achievements" element={<Achievements />} />
-              <Route path="/analytics" element={<Analytics />} />
-              <Route path="/insights" element={<Insights />} />
-              <Route path="/settings" element={<Settings />} />
-            </Route>
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
+        <Routes>
+          <Route path="/setup-helper" element={<SetupHelper />} />
+          <Route path="*" element={
+            isSupabaseConfigured ? (
+              <AuthProvider>
+                <Routes>
+                  <Route path="/" element={<LandingOnly />} />
+                  <Route path="/landing" element={<Navigate to="/" replace />} />
+                  <Route path="/auth" element={<Auth />} />
+                  <Route path="/auth/callback" element={<AuthCallback />} />
+                  <Route element={
+                    <ProtectedRoute>
+                      <AppLayout />
+                    </ProtectedRoute>
+                  }>
+                    <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/habits" element={<Habits />} />
+                    <Route path="/achievements" element={<Achievements />} />
+                    <Route path="/analytics" element={<Analytics />} />
+                    <Route path="/insights" element={<Insights />} />
+                    <Route path="/settings" element={<Settings />} />
+                  </Route>
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </AuthProvider>
+            ) : (
+              <SupabaseConfigError />
+            )
+          } />
+        </Routes>
       </TooltipProvider>
-    </AuthProvider>
+    </BrowserRouter>
   </QueryClientProvider>
-  );
-};
+);
 
 export default App;
