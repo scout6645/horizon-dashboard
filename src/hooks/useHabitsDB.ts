@@ -67,6 +67,9 @@ export const useHabitsDB = () => {
   // Fetch all data
   const fetchData = useCallback(async () => {
     if (!user) {
+      setHabits([]);
+      setCompletions([]);
+      setProfile(null);
       setLoading(false);
       return;
     }
@@ -89,18 +92,29 @@ export const useHabitsDB = () => {
           .maybeSingle(),
       ]);
 
-      if (habitsRes.error) throw habitsRes.error;
-      if (completionsRes.error) throw completionsRes.error;
+      if (habitsRes.error) {
+        console.error('[useHabitsDB] fetch habits error:', habitsRes.error);
+        throw habitsRes.error;
+      }
+      if (completionsRes.error) {
+        console.error('[useHabitsDB] fetch completions error:', completionsRes.error);
+        throw completionsRes.error;
+      }
 
       setHabits(habitsRes.data || []);
       setCompletions(completionsRes.data || []);
       setProfile(profileRes.data);
     } catch (error) {
-      console.error('Error fetching data:', error);
+      console.error('[useHabitsDB] Error fetching data:', error);
+      toast({
+        title: "Could not load data",
+        description: "Check your connection and try again.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, toast]);
 
   useEffect(() => {
     fetchData();
@@ -110,30 +124,49 @@ export const useHabitsDB = () => {
 
   // Add habit
   const addHabit = useCallback(async (habit: Omit<DBHabit, 'id' | 'created_at' | 'user_id' | 'sort_order'>) => {
-    if (!user) return null;
+    if (!user) {
+      console.warn('[useHabitsDB] addHabit: No user - must be authenticated');
+      toast({
+        title: "Please sign in",
+        description: "You must be logged in to create habits.",
+        variant: "destructive",
+      });
+      return null;
+    }
+
+    const payload = {
+      ...habit,
+      user_id: user.id,
+      sort_order: habits.length,
+    };
 
     try {
       const { data, error } = await supabase
         .from('habits')
-        .insert({
-          ...habit,
-          user_id: user.id,
-          sort_order: habits.length,
-        })
+        .insert(payload)
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('[useHabitsDB] addHabit insert error:', error);
+        toast({
+          title: "Failed to create habit",
+          description: error.message || "Please try again.",
+          variant: "destructive",
+        });
+        return null;
+      }
 
       setHabits(prev => [...prev, data]);
       toast({ title: "Habit created! 🎯", description: `"${habit.name}" has been added.` });
       return data;
     } catch (error) {
-      console.error('Error adding habit:', error);
-      toast({ 
-        title: "Failed to create habit", 
-        description: "Please try again.",
-        variant: "destructive"
+      const msg = error instanceof Error ? error.message : "Unknown error";
+      console.error('[useHabitsDB] addHabit error:', error);
+      toast({
+        title: "Failed to create habit",
+        description: msg,
+        variant: "destructive",
       });
       return null;
     }

@@ -1,42 +1,80 @@
 import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2, Sparkles } from 'lucide-react';
 
 /**
  * Handles redirect from Supabase after email confirmation or OAuth.
- * Supabase sends users here with #access_token=...; we wait for the
- * client to process the hash then redirect to dashboard.
+ * For OAuth PKCE: URL has ?code=... - we exchange it for a session.
+ * For email confirm / implicit: URL has #access_token=... - client auto-parses.
  */
 const AuthCallback: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        if (session) {
-          navigate('/dashboard', { replace: true });
-        }
-      }
-    );
+    let cancelled = false;
+    let subscription: { unsubscribe: () => void } | null = null;
+    let timer: ReturnType<typeof setTimeout> | null = null;
 
-    // Process OAuth callback hash and poll for session (Supabase parses hash async)
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        navigate('/dashboard', { replace: true });
-      } else {
-        navigate('/', { replace: true });
-      }
+    const finishAuth = () => {
+      if (cancelled) return;
+      navigate('/dashboard', { replace: true });
     };
 
-    const timer = setTimeout(checkSession, 800);
+    const failAuth = () => {
+      if (cancelled) return;
+      navigate('/', { replace: true });
+    };
+
+    (async () => {
+      const code = searchParams.get('code');
+      const errorParam = searchParams.get('error');
+
+      if (errorParam) {
+        if (import.meta.env.DEV) console.warn('[AuthCallback] OAuth error:', errorParam);
+        failAuth();
+        return;
+      }
+
+      if (code) {
+        try {
+          const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+          if (error) {
+            console.error('[AuthCallback] exchangeCodeForSession error:', error);
+            failAuth();
+            return;
+          }
+          if (data.session && !cancelled) finishAuth();
+        } catch (e) {
+          console.error('[AuthCallback] exchangeCodeForSession exception:', e);
+          failAuth();
+        }
+        return;
+      }
+
+      const { data: { subscription: sub } } = supabase.auth.onAuthStateChange(
+        (_event, session) => {
+          if (session && !cancelled) finishAuth();
+        }
+      );
+      subscription = sub;
+
+      const checkSession = async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session && !cancelled) finishAuth();
+        else if (!cancelled) failAuth();
+      };
+
+      timer = setTimeout(checkSession, 1200);
+    })();
 
     return () => {
-      subscription.unsubscribe();
-      clearTimeout(timer);
+      cancelled = true;
+      subscription?.unsubscribe();
+      if (timer) clearTimeout(timer);
     };
-  }, [navigate]);
+  }, [navigate, searchParams]);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4">

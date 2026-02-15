@@ -9,6 +9,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, fullName?: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
+  resendVerification: (email: string) => Promise<{ error: Error | null }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -32,6 +33,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (!cancelled) {
+          if (import.meta.env.DEV) {
+            console.log('[Auth] onAuthStateChange:', event, session?.user?.id ?? 'no user');
+          }
           setSession(session);
           setUser(session?.user ?? null);
           setLoading(false);
@@ -65,7 +69,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signUp = async (email: string, password: string, fullName?: string) => {
     const redirectUrl = `${window.location.origin}/auth/callback`;
-    
+    if (import.meta.env.DEV) console.log('[Auth] signUp redirectTo:', redirectUrl);
+
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -93,8 +98,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await supabase.auth.signOut();
   };
 
+  const resendVerification = async (email: string) => {
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email,
+    });
+    return { error: error as Error | null };
+  };
+
   return (
-    <AuthContext.Provider value={{ user, session, loading, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, signUp, signIn, signOut, resendVerification }}>
       {children}
     </AuthContext.Provider>
   );

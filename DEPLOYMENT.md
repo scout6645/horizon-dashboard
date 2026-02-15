@@ -3,6 +3,15 @@
 **Stack:** React + Vite + TypeScript (frontend only), Supabase (DB + Auth).  
 **Hosting:** Vercel (frontend, free). No separate backend – Supabase is used directly from the browser.
 
+## Quick Fixes Applied (Production Ready)
+
+- **Habit creation**: Validates user auth, passes `user_id`, shows error toasts with real messages
+- **Google login**: Supabase native OAuth with `/auth/callback`, proper `exchangeCodeForSession` handling
+- **Email verification**: `redirectTo` uses deployed domain; added "Resend verification email" button
+- **Supabase**: Env vars support both `VITE_SUPABASE_ANON_KEY` and `VITE_SUPABASE_PUBLISHABLE_KEY`
+- **Profile creation**: Google OAuth users get `full_name` from `name` or `full_name` metadata
+- **Debug logging**: Console logs for auth/session and insert errors (dev mode only)
+
 ---
 
 ## STEP 1 – Repo analysis (done)

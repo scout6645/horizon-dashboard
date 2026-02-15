@@ -137,6 +137,10 @@ export const AddHabitModal: React.FC<AddHabitModalProps> = ({
       const m = parseInt(targetMinutes) || 0;
       return h * 60 + m || null;
     }
+    if (habitType === 'fixed_time' && targetValue) {
+      const [h, m] = targetValue.split(':').map(Number);
+      if (!isNaN(h) && !isNaN(m)) return h * 60 + m;
+    }
     return parseFloat(targetValue) || null;
   };
 

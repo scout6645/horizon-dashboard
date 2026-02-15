@@ -18,9 +18,11 @@ const Auth: React.FC = () => {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [verificationEmailSent, setVerificationEmailSent] = useState<string | null>(null);
+  const [resending, setResending] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   
-  const { signIn, signUp, user } = useAuth();
+  const { signIn, signUp, user, resendVerification } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -94,9 +96,10 @@ const Auth: React.FC = () => {
             });
           }
         } else {
+          setVerificationEmailSent(email);
           toast({
             title: "Check your email! 📧",
-            description: "We've sent you a verification link to confirm your account.",
+            description: "We've sent you a verification link. Check spam folder if you don't see it.",
           });
         }
       }
@@ -267,6 +270,31 @@ const Auth: React.FC = () => {
            </Button>
           </form>
           
+          {verificationEmailSent && (
+            <div className="rounded-lg border border-border bg-muted/50 p-3 text-sm">
+              <p className="text-muted-foreground mb-2">Verification email sent to {verificationEmailSent}</p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={resending}
+                onClick={async () => {
+                  if (!verificationEmailSent) return;
+                  setResending(true);
+                  const { error } = await resendVerification(verificationEmailSent);
+                  setResending(false);
+                  if (error) {
+                    toast({ title: "Resend failed", description: error.message, variant: "destructive" });
+                  } else {
+                    toast({ title: "Email resent! 📧", description: "Check your inbox and spam folder." });
+                  }
+                }}
+              >
+                {resending ? "Sending..." : "Resend verification email"}
+              </Button>
+            </div>
+          )}
+
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-border" />
@@ -282,9 +310,9 @@ const Auth: React.FC = () => {
             onClick={async () => {
               const { error } = await supabase.auth.signInWithOAuth({
                 provider: "google",
-                options: {
-                  redirectTo: `${window.location.origin}/auth/callback`,
-                },
+              options: {
+                redirectTo: `${window.location.origin}/auth/callback`,
+              },
               });
               if (error) {
                 toast({ title: "Google sign in failed", description: error.message, variant: "destructive" });
@@ -306,6 +334,7 @@ const Auth: React.FC = () => {
               onClick={() => {
                 setIsLogin(!isLogin);
                 setErrors({});
+                setVerificationEmailSent(null);
               }}
               className="text-primary hover:text-primary/80 font-medium transition-colors"
             >
