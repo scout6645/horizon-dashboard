@@ -60,13 +60,22 @@ const AuthCallback: React.FC = () => {
       );
       subscription = sub;
 
-      const checkSession = async () => {
+      // Poll for session (handles hash-based email confirm + slow OAuth)
+      const checkSession = async (attempt = 0) => {
+        if (cancelled) return;
         const { data: { session } } = await supabase.auth.getSession();
-        if (session && !cancelled) finishAuth();
-        else if (!cancelled) failAuth();
+        if (session && !cancelled) {
+          finishAuth();
+          return;
+        }
+        if (attempt < 3) {
+          timer = setTimeout(() => checkSession(attempt + 1), 600);
+        } else if (!cancelled) {
+          failAuth();
+        }
       };
 
-      timer = setTimeout(checkSession, 1200);
+      timer = setTimeout(() => checkSession(0), 500);
     })();
 
     return () => {
